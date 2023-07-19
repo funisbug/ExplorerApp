@@ -5,31 +5,31 @@ namespace Explorer.Controllers
 {
     public class FolderController : Controller
     {
-        private readonly IFolderService folderManager;
+        private readonly IFolderService folderService;
 
-        public FolderController(IFolderService folderManager)
+        public FolderController(IFolderService folderService)
         {
-            this.folderManager = folderManager;
+            this.folderService = folderService;
         }		
 
 		[HttpPost]
         public async Task<IActionResult> Create(int? parentFolderId, string folderName)
         {
-            await folderManager.CreateAsync(parentFolderId, folderName);
+            await folderService.CreateAsync(parentFolderId, folderName);
             return RedirectToAction("Index", "Explorer");
         }
 
 		[HttpPost]
 		public async Task<IActionResult> Delete(int folderId)
         {
-            await folderManager.DeleteAsync(folderId);
+            await folderService.DeleteAsync(folderId);
             return RedirectToAction("Index", "Explorer");
         }
 
         [HttpPost]
         public async Task<IActionResult> Rename(int folderId, string newName)
         {
-            await folderManager.RenameAsync(folderId, newName);
+            await folderService.RenameAsync(folderId, newName);
             return RedirectToAction("Index", "Explorer");
         }
     }

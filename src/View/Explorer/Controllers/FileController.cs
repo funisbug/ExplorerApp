@@ -6,11 +6,11 @@ namespace Explorer.Controllers
 {
     public class FileController : Controller
     {
-        private readonly IFileService fileManager;
+        private readonly IFileService fileService;
 
-        public FileController(IFileService fileManager)
+        public FileController(IFileService fileService)
         {
-            this.fileManager = fileManager;
+            this.fileService = fileService;
         }
 
         [HttpPost]
@@ -25,7 +25,7 @@ namespace Explorer.Controllers
                 }
 				using var reader = new StreamReader(file.OpenReadStream());
 				var content = await reader.ReadToEndAsync();
-				await fileManager.UploadAsync(file.FileName, description, folderId, content);
+				await fileService.UploadAsync(file.FileName, description, folderId, content);
 			}			
             return RedirectToAction("Index", "Explorer");
         }
@@ -39,7 +39,7 @@ namespace Explorer.Controllers
 
         public async Task<IActionResult> Download(int fileId)
         {
-            var file = await fileManager.GetFileAsync(fileId);
+            var file = await fileService.GetFileAsync(fileId);
             var bytes = Encoding.UTF8.GetBytes(file.Content);
             var fileName = file.Name + "." + file.FileType.Type;
 			return File(bytes, "text/plain", fileName);
@@ -48,14 +48,14 @@ namespace Explorer.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int fileId)
         {
-            await fileManager.DeleteAsync(fileId);
+            await fileService.DeleteAsync(fileId);
             return RedirectToAction("Index", "Explorer");
         }
 
         [HttpPost]
         public async Task<IActionResult> Rename(int fileId, string newName)
         {
-            await fileManager.RenameAsync(fileId, newName);
+            await fileService.RenameAsync(fileId, newName);
             return RedirectToAction("Index", "Explorer");
         }
     }

@@ -7,18 +7,18 @@ namespace Explorer.Controllers
 {
     public class FileTypeController : Controller
     {
-        private readonly IFileTypeService fileTypeManager;
+        private readonly IFileTypeService fileTypeService;
         private readonly IMapper mapper;
 
-        public FileTypeController(IFileTypeService fileTypeManager, IMapper mapper)
+        public FileTypeController(IFileTypeService fileTypeService, IMapper mapper)
         {
-            this.fileTypeManager = fileTypeManager;
+            this.fileTypeService = fileTypeService;
             this.mapper = mapper;
         }
 
         public async Task<IActionResult> Index()
         {
-            var fileTypes = await fileTypeManager.GetAllAsync();
+            var fileTypes = await fileTypeService.GetAllAsync();
             return View(mapper.Map<List<FileTypeViewModel>>(fileTypes));
         }
 
@@ -30,7 +30,7 @@ namespace Explorer.Controllers
 				var ms = new MemoryStream();
 				icon.CopyTo(ms);
 				var iconData = ms.ToArray();
-				await fileTypeManager.CreateAsync(type, iconData);
+				await fileTypeService.CreateAsync(type, iconData);
 			}            
             return RedirectToAction("Index");
         }
@@ -38,7 +38,7 @@ namespace Explorer.Controllers
         [HttpPost]
         public async Task<IActionResult> Delete(int fileTypeId)
         {
-            await fileTypeManager.DeleteAsync(fileTypeId);
+            await fileTypeService.DeleteAsync(fileTypeId);
             return RedirectToAction("Index");
         }
     }
