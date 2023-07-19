@@ -1,0 +1,264 @@
+﻿@model List<FolderViewModel>
+
+@{
+	ViewData["Title"] = "Проводник";
+}
+
+<div class="top-panel">
+	<button id="createFolder">Создать папку</button>
+	<div id="menuFolder" style="display:none;">
+		<button id="deleteFolder">Удалить папку</button>
+		<button id="renameFolder">Переименовать папку</button>
+		<button id="uploadFile">Загрузить файл</button>
+	</div>
+	<div id="menuFile" style="display:none;">
+		<button id="downloadFile">Скачать файл</button>
+		<button id="deleteFile">Удалить файл</button>
+		<button id="renameFile">Переименовать файл</button>
+	</div>
+	<button id="manageExtensions">Работа с расширениями</button>
+</div>
+<div class="row">
+	<div class="col-md-3">
+		<div class="tree-container">
+			<div id="tree">
+				@foreach (var folder in Model)
+				{
+					<div class="folder" data-folder-id="@folder.Id" data-level="0">
+						<i class="fa-regular fa-folder-closed"></i>@folder.Name
+						<div class="children" style="margin-left: 20px; display:none;"></div>
+					</div>
+				}
+			</div>
+		</div>
+	</div>
+	<div class="col-md-9">
+		<div class="file-container">
+			<div id="fileContent" style="display:none;"></div>
+			<div id="uploadForm" style="display:none;">
+				<div class="row justify-content-center">
+					<div class="col-9">
+						<div class="card p-4">
+							<form asp-controller="File" asp-action="Upload" method="post" enctype="multipart/form-data">
+								<input type="file" name="file" id="fileInput" class="form-control" required />
+								<input type="hidden" name="folderId" id="selectedFolderId" value="" />
+								<div class="form-group my-4">
+									<label for="description">Описание:</label>
+									<textarea name="description" id="description" class="form-control" required></textarea>
+								</div>
+								<div class="text-center">
+									<button type="submit">Загрузить файл</button>
+								</div>								
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+			@if (TempData.ContainsKey("ErrorMessage"))
+			{
+				<div class="alert alert-danger">
+					@TempData["ErrorMessage"]
+				</div>
+			}
+		</div>
+	</div>
+</div>
+
+@section scripts {
+	<script>
+		$(document).ready(function () {
+			$('.folder').each(function () {
+				var folderId = $(this).data('folder-id');
+				var childrenElement = $(this).children('.children');
+				if (childrenElement.is(':empty')) {
+					loadChildren(folderId, childrenElement);
+				}
+			});
+			
+			function loadChildren(parentFolderId, childrenElement) {
+				$.ajax({
+					url: '@Url.Action("GetChildren", "Explorer")',
+					type: 'GET',
+					data: { folderId: parentFolderId },
+					success: function (data) {
+						childrenElement.html(data);
+					}
+				});
+			}
+
+			$('#tree').on('click', '.folder, .file', function (e) {
+				e.stopPropagation();
+				var $this = $(this);
+				var isSelected = $this.hasClass('selected');
+				$('.folder, .file').removeClass('selected');
+				if (!isSelected) {
+					var folderId = $this.data('folder-id');
+					var fileId = $this.data('file-id');
+					var childrenElement = $this.children('.children');
+					if (childrenElement.is(':empty')) {
+						loadChildren(folderId, childrenElement);
+					}
+					$this.addClass('selected');
+					if (fileId) {
+						$('#menuFile').show();
+						$('#menuFolder').hide();
+					}
+					else {
+						$('#menuFolder').show();
+						$('#menuFile').hide();
+					}
+					if (fileId) {
+						$('#uploadForm').hide();
+						$.ajax({
+							url: '@Url.Action("GetFile", "Explorer")',
+							type: 'GET',
+							data: { fileId: fileId },
+							success: function (data) {
+								$('#fileContent').html(data);
+								$('#fileContent').show();
+							}
+						});
+					}
+					childrenElement.slideToggle();
+				} else {
+					$('#fileContent').empty();
+					$('#fileContent').hide();
+				}
+			});
+
+			$(document).on('click', function (e) {
+				var $target = $(e.target);
+				if (!$target.hasClass('folder') && !$target.hasClass('file')) {
+					$('.folder, .file').removeClass('selected');
+				}
+				$('#menuFolder').hide();
+				$('#menuFile').hide();
+			});
+
+			var selectedFolderId = null;
+
+			$('#tree').on('click', '.folder', function () {
+				selectedFolderId = $(this).data('folder-id');
+			});
+
+			$('#createFolder').on('click', function () {
+				var newFolderName = prompt('Введите новое имя для папки:');
+				if (newFolderName !== null && newFolderName.trim() !== '') {
+					$.ajax({
+						url: '@Url.Action("Create", "Folder")',
+						type: 'POST',
+						data: { parentFolderId: selectedFolderId, folderName: newFolderName },
+						success: function (data) {
+							location.reload();
+						}
+					});
+				}
+			});
+
+			$('#deleteFolder').on('click', function () {
+				if (selectedFolderId) {
+					if (confirm("Вы уверены, что хотите удалить эту папку и всё её содержимое?")) {
+						$.ajax({
+							url: '@Url.Action("Delete", "Folder")',
+							type: 'POST',
+							data: { folderId: selectedFolderId },
+							success: function () {
+								location.reload();
+							},
+							error: function () {
+								alert('Ошибка при удалении папки.');
+							}
+						});
+					}
+				} else {
+					alert('Выберите папку для удаления.');
+				}
+			});
+
+			$('#renameFolder').on('click', function () {
+				var selectedFolderId = $('.folder.selected').data('folder-id');
+				if (selectedFolderId) {
+					var newFolderName = prompt('Введите новое имя для папки:');
+					if (newFolderName !== null && newFolderName.trim() !== '') {
+						$.ajax({
+							url: '@Url.Action("Rename", "Folder")',
+							type: 'POST',
+							data: { folderId: selectedFolderId, newName: newFolderName },
+							success: function () {
+								location.reload();
+							}
+						});
+					}
+				} else {
+					alert('Выберите папку для переименования.');
+				}
+			});
+
+			$('#uploadFile').on('click', function () {
+				$('#uploadForm').show();
+				$('#fileContent').hide();
+				$('#selectedFolderId').val(selectedFolderId);
+			});
+
+			$('#downloadFile').on('click', function () {
+				var selectedFileId = $('.file.selected').data('file-id');
+				if (selectedFileId) {
+					var downloadUrl = '@Url.Action("Download", "File")' + '?fileId=' + selectedFileId;
+					var link = document.createElement('a');
+					link.href = downloadUrl;
+					link.download = true; 
+					var selectedFileName = $('.file.selected').data('filename');
+					link.setAttribute('download', selectedFileName);
+					link.click(); 
+					console.log('Файл успешно скачан.');
+				} else {
+					alert('Выберите файл для скачивания.');
+				}
+			});
+
+			$('#deleteFile').on('click', function () {
+				var selectedFileId = $('.file.selected').data('file-id');
+				if (selectedFileId) {
+					if (confirm("Вы уверены, что хотите удалить этот файл?")) {
+						$.ajax({
+							url: '@Url.Action("Delete", "File")',
+							type: 'POST',
+							data: { fileId: selectedFileId },
+							success: function () {
+								location.reload();
+							},
+							error: function () {
+								alert('Ошибка при удалении файла.');
+							}
+						});
+					}
+				} else {
+					alert('Выберите файл для удаления.');
+				}
+			});
+
+			$('#renameFile').on('click', function () {
+				var selectedFileId = $('.file.selected').data('file-id');
+				if (selectedFileId) {
+					var newFileName = prompt('Введите новое имя для файла:');
+					if (newFileName !== null && newFileName.trim() !== '') {
+						$.ajax({
+							url: '@Url.Action("Rename", "File")',
+							type: 'POST',
+							data: { fileId: selectedFileId, newName: newFileName },
+							success: function () {
+								location.reload();
+							}
+						});
+					}
+				} else {
+					alert('Выберите файл для переименования.');
+				}
+			});
+
+			$('#manageExtensions').on('click', function () {
+				window.location.href = '@Url.Action("Index", "FileType")';
+			});
+		});
+	</script>
+}

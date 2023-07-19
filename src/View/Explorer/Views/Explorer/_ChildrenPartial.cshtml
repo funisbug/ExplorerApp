@@ -1,0 +1,24 @@
+﻿@model FolderViewModel
+
+@foreach (var folder in Model.Folders)
+{
+    <div class="folder" data-folder-id="@folder.Id">
+        <i class="fa-regular fa-folder-closed"></i>@folder.Name
+        <div class="children" style="margin-left: 20px; display:none;"></div>
+    </div>
+}
+
+@foreach (var file in Model.Files)
+{
+    <div class="file" data-file-id="@file.Id" title="@file.Description">
+        @if (file.FileType.Icon.Length == 0)
+        {
+            <i class="fa-regular fa-file-lines"></i>
+        }
+        else
+        {
+            <img src="data:image/png;base64,@Convert.ToBase64String(file.FileType.Icon)" width="18" alt="@file.FileType.Icon">
+        }
+        @file.Name.@file.FileType.Type
+    </div>
+}

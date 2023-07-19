@@ -1,0 +1,63 @@
+﻿@model List<FileTypeViewModel>
+
+@{
+    ViewData["Title"] = "Расширения";
+}
+
+<div class="row justify-content-center">
+    <div class="col-6">
+        <div class="row text-center mt-4">
+            <h4>Список расширений</h4>
+        </div>        
+        <table class="table">
+            <tr>
+                <th>Тип</th>
+                <th>Иконка</th>
+                <th></th>
+            </tr>
+            @foreach (var fileType in Model)
+            {
+                <tr>
+                    <td>@fileType.Type</td>
+                    <td>
+                        @if (fileType.Icon.Length == 0)
+                        {
+                            <i class="fa-regular fa-file-lines"></i>
+                        }
+                        else
+                        {
+                            <img src="data:image/png;base64,@Convert.ToBase64String(fileType.Icon)" width="25" alt="@fileType.Icon">
+                        }                        
+                    </td>
+                    <td>
+                        <form asp-controller="FileType" asp-action="Delete">
+                            <input type="hidden" name="fileTypeId" value="@fileType.Id" />
+                            <button type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+        <div class="row text-center mt-4">
+            <h4>Создать новое расширение</h4>
+        </div>
+        <form asp-controller="FileType" asp-action="Create" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="fileType">Тип файла:</label>
+                <input type="text" id="fileType" name="Type" class="form-control" />
+            </div>
+            <div class="form-group my-3">
+                <label for="iconFile">Выберите иконку:</label>
+                <input type="file" id="iconFile" name="Icon" class="form-control-file" />
+            </div>
+            <div class="row mt-4 text-center">
+                <div class="col">
+                    <button asp-controller="Explorer" asp-action="Index">Вернуться назад</button>
+                </div>
+                <div class="col">
+                    <button type="submit">Добавить расширение</button>
+                </div>
+            </div>            
+        </form>        
+    </div>
+</div>
